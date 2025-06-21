@@ -85,7 +85,6 @@ Desktop.ini
 # 应用特定配置文件（包含敏感信息）
 src/main/resources/application-dev.yml
 src/main/resources/application-local.yml
-src/main/resources/application-prod.yml
 
 # 临时文件
 *.tmp
