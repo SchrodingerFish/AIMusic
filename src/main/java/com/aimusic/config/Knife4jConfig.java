@@ -22,13 +22,13 @@ public class Knife4jConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("曲中人 - AI音乐问答系统")
-                        .description("用歌词解答人生的AI音乐问答系统API文档")
-                        .version("1.0.0")
+                        .title("曲中人")
+                        .description("初听不识曲中意，再听已是曲中人")
+                        .version("2.0.0")
                         .contact(new Contact()
                                 .name("开发团队")
-                                .email("support@aimusic.com")
-                                .url("https://github.com/aimusic/aimusic"))
+                                .email("schrodingersfish@outlook.com")
+                                .url("https://github.com/schrodingerfish/aimusic"))
                         .license(new License()
                                 .name("MIT License")
                                 .url("https://opensource.org/licenses/MIT")));

@@ -11,6 +11,10 @@ spring:
     name: aimusic
   profiles:
     active: @spring.profiles.active@
+  security:
+    user:
+      name: ${SPRING_SECURITY_USER_NAME:admin}
+      password: ${SPRING_SECURITY_USER_PASSWORD:123456}
   thymeleaf:
     cache: true
     encoding: UTF-8
