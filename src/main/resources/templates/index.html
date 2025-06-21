@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{page.title}">曲中人 - 用歌词解答人生</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="language-switcher">
+                <a href="?lang=zh_CN" class="lang-btn" th:classappend="${#locale.language == 'zh' ? 'active' : ''}" th:text="#{page.lang.chinese}">中文</a>
+                <a href="?lang=en_US" class="lang-btn" th:classappend="${#locale.language == 'en' ? 'active' : ''}" th:text="#{page.lang.english}">English</a>
+            </div>
+            <h1 th:text="#{app.name}">曲中人</h1>
+            <p th:text="#{app.description}">初听不识曲中意，再听已是曲中人</p>
+        </div>
+
+        <div class="main-content">
+            <div class="question-section">
+                <div class="question-label" th:text="#{form.question.label}">请输入你的问题：</div>
+                <textarea 
+                    class="question-input" 
+                    id="questionInput" 
+                    th:placeholder="#{form.question.placeholder}"
+                    th:maxlength="${maxQuestionLength}"
+                ></textarea>
+                <button class="submit-btn" id="submitBtn" onclick="askQuestion()" th:text="#{form.submit}">
+                    寻找答案
+                </button>
+                <div id="errorMessage"></div>
+            </div>
+
+            <div class="answer-section" id="answerSection">
+                <div class="answer-label" th:text="#{page.answer.label}">歌词解答：</div>
+                <div class="answer-content" id="answerContent"></div>
+
+                <!-- 音乐播放器 -->
+                <div class="music-player" id="musicPlayer" style="display: none;">
+                    <div class="music-info">
+                        <div class="music-title" id="musicTitle"></div>
+                        <div class="music-artist" id="musicArtist"></div>
+                    </div>
+                    <div class="player-controls">
+                        <button class="play-btn" id="playBtn" onclick="togglePlay()">
+                            <span class="play-icon">▶</span>
+                            <span class="pause-icon" style="display: none;">⏸</span>
+                        </button>
+                        <div class="progress-container">
+                            <div class="progress-bar" id="progressBar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                            <div class="time-info">
+                                <span id="currentTime">0:00</span>
+                                <span id="duration">0:00</span>
+                            </div>
+                        </div>
+                        <button class="volume-btn" onclick="toggleMute()">🔊</button>
+                    </div>
+                    <audio id="audioPlayer" preload="none"></audio>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p th:text="#{footer.slogan}">让音乐为你的人生指路</p>
+            <a href="https://github.com/SchrodingerFish" style="color: rgba(238, 238, 238, 0.5);">Developed by SchrodingerFish</a>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const MAX_QUESTION_LENGTH = /*[[${maxQuestionLength}]]*/ 500;
+        
+        // 国际化文本
+        const I18N = {
+            loading: /*[[#{js.loading}]]*/ '正在寻找合适的歌词...',
+            thinking: /*[[#{js.thinking}]]*/ '正在思考...',
+            findAnswer: /*[[#{js.find_answer}]]*/ '寻找答案',
+            error: {
+                empty: /*[[#{js.error.empty}]]*/ '问题不能为空',
+                length: /*[[#{js.error.length(${maxQuestionLength})}]]*/ '问题长度不能超过500个字符',
+                server: /*[[#{js.error.server}]]*/ '服务器错误，请稍后重试',
+                network: /*[[#{js.error.network}]]*/ '网络连接失败，请检查网络后重试',
+                play: /*[[#{js.error.play}]]*/ '音乐播放失败，可能是网络问题或音源不可用',
+                load: /*[[#{js.error.load}]]*/ '音乐加载失败，可能是网络问题或音源不可用'
+            },
+            music: {
+                notFound: /*[[#{js.music.not_found}]]*/ '未找到相关音乐或音乐暂时不可用'
+            }
+        };
+        /*]]>*/
+    </script>
+    <script th:src="@{/js/script.js}"></script>
+</body>
+</html>
