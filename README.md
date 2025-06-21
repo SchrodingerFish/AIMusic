@@ -816,7 +816,7 @@ A: 排查步骤：
 
 1. **Fork项目**
    ```bash
-   git clone https://github.com/your-username/aimusic.git
+   git clone https://github.com/SchrodingerFish/aimusic.git
    cd aimusic
    ```
 
@@ -858,10 +858,10 @@ A: 排查步骤：
 
 如有问题或建议，请通过以下方式联系：
 
-- 📧 **邮箱**：your-email@example.com
-- 🐛 **问题反馈**：[GitHub Issues](https://github.com/your-username/aimusic/issues)
-- 💬 **功能建议**：[GitHub Discussions](https://github.com/your-username/aimusic/discussions)
-- 📖 **文档问题**：[Wiki页面](https://github.com/your-username/aimusic/wiki)
+- 📧 **邮箱**：SchrodingersFish@outlook.com
+- 🐛 **问题反馈**：[GitHub Issues](https://github.com/SchrodingerFish/aimusic/issues)
+- 💬 **功能建议**：[GitHub Discussions](https://github.com/SchrodingerFish/aimusic/discussions)
+- 📖 **文档问题**：[Wiki页面](https://github.com/SchrodingerFish/aimusic/wiki)
 
 ## 🙏 致谢
 
@@ -877,7 +877,7 @@ A: 排查步骤：
 
 ⭐ 如果这个项目对你有帮助，请给我们一个星标！
 
-🔗 **项目链接**：[https://github.com/your-username/aimusic](https://github.com/your-username/aimusic)
+🔗 **项目链接**：[https://github.com/SchrodingerFish/aimusic](https://github.com/SchrodingerFish/aimusic)
 
 ---
 

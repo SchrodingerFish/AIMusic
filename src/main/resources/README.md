@@ -787,7 +787,7 @@ A: 排查步骤：
 
 ## 🔄 版本更新
 
-### v2.0.0 (2024-12-XX) - 当前版本
+### v2.0.0 (2025-06-21) - 当前版本
 - ✨ **新增功能**：
   - 多环境配置支持（dev/prod/local）
   - Docker多阶段构建
@@ -804,13 +804,6 @@ A: 排查步骤：
   - 解决配置文件加载问题
   - 优化资源使用和内存管理
 
-### v1.0.0 (2024-01-01)
-- 🎉 初始版本发布
-- 🎵 基础AI音乐生成功能
-- 🌐 Web界面支持
-- ⚡ 缓存机制实现
-- 🛡️ 统一异常处理
-
 ## 📄 许可证
 
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
@@ -823,7 +816,7 @@ A: 排查步骤：
 
 1. **Fork项目**
    ```bash
-   git clone https://github.com/schrodingerfish/aimusic.git
+   git clone https://github.com/SchrodingerFish/aimusic.git
    cd aimusic
    ```
 
@@ -865,10 +858,10 @@ A: 排查步骤：
 
 如有问题或建议，请通过以下方式联系：
 
-- 📧 **邮箱**：schrodingersfish@outlook.com
-- 🐛 **问题反馈**：[GitHub Issues](https://github.com/schrodingerfish/aimusic/issues)
-- 💬 **功能建议**：[GitHub Discussions](https://github.com/schrodingerfish/aimusic/discussions)
-- 📖 **文档问题**：[Wiki页面](https://github.com/schrodingerfish/aimusic/wiki)
+- 📧 **邮箱**：SchrodingersFish@outlook.com
+- 🐛 **问题反馈**：[GitHub Issues](https://github.com/SchrodingerFish/aimusic/issues)
+- 💬 **功能建议**：[GitHub Discussions](https://github.com/SchrodingerFish/aimusic/discussions)
+- 📖 **文档问题**：[Wiki页面](https://github.com/SchrodingerFish/aimusic/wiki)
 
 ## 🙏 致谢
 
@@ -884,7 +877,7 @@ A: 排查步骤：
 
 ⭐ 如果这个项目对你有帮助，请给我们一个星标！
 
-🔗 **项目链接**：[https://github.com/schrodingerfish/aimusic](https://github.com/schrodingerfish/aimusic)
+🔗 **项目链接**：[https://github.com/SchrodingerFish/aimusic](https://github.com/SchrodingerFish/aimusic)
 
 ---
 
