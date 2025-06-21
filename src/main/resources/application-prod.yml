@@ -1,0 +1,56 @@
+# 生产环境配置
+debug: false
+
+spring:
+  thymeleaf:
+    cache: true
+
+# AI配置 - 生产环境（使用环境变量）
+ai:
+  base-url: ${AI_BASE_URL}
+  api-key: ${AI_API_KEY}
+  model-name: ${AI_MODEL_NAME:gpt-4}
+  timeout: ${AI_TIMEOUT:60}
+
+# 代理配置 - 生产环境
+proxy:
+  enabled: ${PROXY_ENABLED:false}
+  host: ${PROXY_HOST:127.0.0.1}
+  port: ${PROXY_PORT:8080}
+
+# 日志配置 - 生产环境
+logging:
+  level:
+    com.aimusic: INFO
+    org.springframework.web: WARN
+    org.springframework.cache: WARN
+    root: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/aimusic.log
+    max-size: 50MB
+    max-history: 30
+
+# Knife4j配置 - 生产环境
+knife4j:
+  enable: false
+  production: true
+
+# SpringDoc配置 - 生产环境
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+# 管理端点配置 - 生产环境
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: never
