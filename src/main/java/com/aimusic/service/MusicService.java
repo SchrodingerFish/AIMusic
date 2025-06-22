@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,18 +35,52 @@ public class MusicService implements IMusicService {
     /**
      * 从AI回答中提取歌曲信息
      */
-    public SongInfo extractSongInfo(String aiAnswer) {
-        // 匹配格式：歌词--作者《歌名》
-        Pattern pattern = Pattern.compile("--(.+?)《(.+?)》");
-        Matcher matcher = pattern.matcher(aiAnswer);
+    private SongInfo extractSongInfo(String aiAnswer) {
+        List<SongInfo> songs = extractMultipleSongInfo(aiAnswer);
+        return songs.isEmpty() ? null : songs.get(0);
+    }
+    
+    /**
+     * 从AI回答中提取多首歌曲信息
+     */
+    private List<SongInfo> extractMultipleSongInfo(String aiAnswer) {
+        List<SongInfo> songList = new ArrayList<>();
         
-        if (matcher.find()) {
-            String artist = matcher.group(1).trim();
-            String song = matcher.group(2).trim();
-            return new SongInfo(artist, song);
+        if (aiAnswer == null || aiAnswer.trim().isEmpty()) {
+            return songList;
         }
         
-        return null;
+        // 匹配歌词格式：歌词内容--歌手《歌名》（每行一段歌词）
+        String[] lines = aiAnswer.split("\n");
+        for (String line : lines) {
+            line = line.trim();
+            if (line.isEmpty()) continue;
+            
+            // 匹配格式：歌词内容--歌手《歌名》
+            if (line.contains("--")) {
+                String[] parts = line.split("--", 2);
+                if (parts.length == 2) {
+                    String artistAndSong = parts[1].trim();
+                    
+                    // 解析歌手《歌名》格式
+                    if (artistAndSong.contains("《") && artistAndSong.contains("》")) {
+                        int songStart = artistAndSong.indexOf("《");
+                        int songEnd = artistAndSong.indexOf("》");
+                        
+                        if (songStart > 0 && songEnd > songStart) {
+                            String artist = artistAndSong.substring(0, songStart).trim();
+                            String song = artistAndSong.substring(songStart + 1, songEnd).trim();
+                            
+                            if (!artist.isEmpty() && !song.isEmpty()) {
+                                songList.add(new SongInfo(artist, song));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return songList;
     }
     
     /**
@@ -53,15 +89,24 @@ public class MusicService implements IMusicService {
     @Override
     @Cacheable(value = "musicCache", key = "#artist + '_' + #song")
     public String searchSong(String artist, String song) {
+        List<String> songs = searchSongs(artist, song, 1);
+        return songs.isEmpty() ? null : songs.get(0);
+    }
+    
+    /**
+     * 搜索多首歌曲
+     */
+    @Override
+    @Cacheable(value = "musicCache", key = "#artist + '_' + #song + '_' + #limit")
+    public List<String> searchSongs(String artist, String song, int limit) {
+        List<String> songIds = new ArrayList<>();
         try {
-            // 使用注入的RestTemplate
-            
             String searchQuery = artist + " " + song;
             String url = UriComponentsBuilder
                 .fromHttpUrl("https://music.163.com/api/search/get/web")
                 .queryParam("s", searchQuery)
                 .queryParam("type", 1)
-                .queryParam("limit", 10)
+                .queryParam("limit", Math.max(limit, 50)) // 搜索更多结果以提供选择
                 .build()
                 .toUriString();
             
@@ -80,11 +125,15 @@ public class MusicService implements IMusicService {
             JsonNode result = jsonNode.get("result");
             if (result != null) {
                 JsonNode songs = result.get("songs");
-                if (songs != null && songs.isArray() && songs.size() > 0) {
-                    JsonNode firstSong = songs.get(0);
-                    JsonNode id = firstSong.get("id");
-                    if (id != null) {
-                        return id.asText();
+                if (songs != null && songs.isArray()) {
+                    int count = 0;
+                    for (JsonNode songNode : songs) {
+                        if (count >= limit) break;
+                        JsonNode id = songNode.get("id");
+                        if (id != null) {
+                            songIds.add(id.asText());
+                            count++;
+                        }
                     }
                 }
             }
@@ -93,7 +142,7 @@ public class MusicService implements IMusicService {
             logger.error("搜索歌曲失败: {} - {}", artist, song, e);
         }
         
-        return null;
+        return songIds;
     }
     
     /**
@@ -159,22 +208,44 @@ public class MusicService implements IMusicService {
      */
     @Override
     public MusicInfo getMusicInfo(String aiAnswer) {
-        SongInfo songInfo = extractSongInfo(aiAnswer);
-        if (songInfo == null) {
-            return null;
+        List<MusicInfo> musicList = getMusicList(aiAnswer, 1);
+        return musicList.isEmpty() ? null : musicList.get(0);
+    }
+    
+    /**
+     * 获取多首音乐信息
+     */
+    @Override
+    public List<MusicInfo> getMusicList(String aiAnswer, int count) {
+        List<MusicInfo> musicList = new ArrayList<>();
+        List<SongInfo> songInfoList = extractMultipleSongInfo(aiAnswer);
+        
+        if (songInfoList.isEmpty()) {
+            return musicList;
         }
         
-        String songId = searchSong(songInfo.getArtist(), songInfo.getSong());
-        if (songId == null) {
-            return null;
+        // 限制处理的歌曲数量
+        int processCount = Math.min(songInfoList.size(), count);
+        
+        for (int i = 0; i < processCount; i++) {
+            SongInfo songInfo = songInfoList.get(i);
+            try {
+                // 为每首歌曲搜索一个最佳匹配
+                List<String> songIds = searchSongs(songInfo.getArtist(), songInfo.getSong(), 1);
+                if (!songIds.isEmpty()) {
+                    String songId = songIds.get(0);
+                    String playUrl = getSongUrl(songId);
+                    if (playUrl != null) {
+                        musicList.add(new MusicInfo(songInfo.getArtist(), songInfo.getSong(), songId, playUrl));
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("获取歌曲信息失败: {} - {}", songInfo.getArtist(), songInfo.getSong(), e);
+                // 继续处理下一首歌曲
+            }
         }
         
-        String playUrl = getSongUrl(songId);
-        if (playUrl == null) {
-            return null;
-        }
-        
-        return new MusicInfo(songInfo.getArtist(), songInfo.getSong(), songId, playUrl);
+        return musicList;
     }
     
 

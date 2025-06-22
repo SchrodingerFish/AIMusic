@@ -26,6 +26,50 @@
                     th:placeholder="#{form.question.placeholder}"
                     th:maxlength="${maxQuestionLength}"
                 ></textarea>
+                
+                <!-- 歌曲数量设置 -->
+                <div class="music-count-section">
+                    <label for="musicCountInput" class="music-count-label" th:text="#{form.musicCount.label}">推荐歌曲数量：</label>
+                    <input type="number" 
+                           id="musicCountInput" 
+                           class="music-count-input" 
+                           min="1" 
+                           max="10" 
+                           value="5" 
+                           th:placeholder="#{form.musicCount.placeholder}">
+                    <span class="music-count-hint" th:text="#{form.musicCount.hint}">(1-10首)</span>
+                </div>
+                
+                <!-- 流派选择 -->
+                <div class="genre-section">
+                    <label class="genre-label" th:text="#{form.genre.label}">音乐流派：</label>
+                    <div class="genre-tags" id="genreTags">
+                        <span class="tag active" data-genre="pop" th:text="#{genre.pop}">流行</span>
+                        <span class="tag" data-genre="rock" th:text="#{genre.rock}">摇滚</span>
+                        <span class="tag" data-genre="folk" th:text="#{genre.folk}">民谣</span>
+                        <span class="tag" data-genre="jazz" th:text="#{genre.jazz}">爵士</span>
+                        <span class="tag" data-genre="classical" th:text="#{genre.classical}">古典</span>
+                        <span class="tag" data-genre="electronic" th:text="#{genre.electronic}">电子</span>
+                        <span class="tag" data-genre="hiphop" th:text="#{genre.hiphop}">嘻哈</span>
+                        <span class="tag" data-genre="country" th:text="#{genre.country}">乡村</span>
+                    </div>
+                </div>
+                
+                <!-- 国家/地区选择 -->
+                <div class="region-section">
+                    <label class="region-label" th:text="#{form.region.label}">国家/地区：</label>
+                    <div class="region-tags" id="regionTags">
+                        <span class="tag active" data-region="china" th:text="#{region.china}">中国</span>
+                        <span class="tag" data-region="usa" th:text="#{region.usa}">美国</span>
+                        <span class="tag" data-region="uk" th:text="#{region.uk}">英国</span>
+                        <span class="tag" data-region="japan" th:text="#{region.japan}">日本</span>
+                        <span class="tag" data-region="korea" th:text="#{region.korea}">韩国</span>
+                        <span class="tag" data-region="france" th:text="#{region.france}">法国</span>
+                        <span class="tag" data-region="germany" th:text="#{region.germany}">德国</span>
+                        <span class="tag" data-region="other" th:text="#{region.other}">其他</span>
+                    </div>
+                </div>
+                
                 <button class="submit-btn" id="submitBtn" onclick="askQuestion()" th:text="#{form.submit}">
                     寻找答案
                 </button>
@@ -38,15 +82,21 @@
 
                 <!-- 音乐播放器 -->
                 <div class="music-player" id="musicPlayer" style="display: none;">
-                    <div class="music-info">
+                    <!-- 当前播放信息 -->
+                    <div class="current-music-info">
                         <div class="music-title" id="musicTitle"></div>
                         <div class="music-artist" id="musicArtist"></div>
                     </div>
+                    
+                    <!-- 播放控制 -->
                     <div class="player-controls">
+                        <button class="control-btn" id="prevBtn" onclick="playPrevious()" title="上一首">⏮</button>
                         <button class="play-btn" id="playBtn" onclick="togglePlay()">
                             <span class="play-icon">▶</span>
                             <span class="pause-icon" style="display: none;">⏸</span>
                         </button>
+                        <button class="control-btn" id="nextBtn" onclick="playNext()" title="下一首">⏭</button>
+                        
                         <div class="progress-container">
                             <div class="progress-bar" id="progressBar">
                                 <div class="progress-fill" id="progressFill"></div>
@@ -56,8 +106,32 @@
                                 <span id="duration">0:00</span>
                             </div>
                         </div>
+                        
+                        <button class="control-btn" id="playModeBtn" onclick="togglePlayMode()" title="播放模式">🔁</button>
                         <button class="volume-btn" onclick="toggleMute()">🔊</button>
+                        <button class="control-btn" id="playlistBtn" onclick="togglePlaylist()" title="播放列表">📋</button>
                     </div>
+                    
+                    <!-- 播放列表 -->
+                    <div class="playlist-container" id="playlistContainer" style="display: none;">
+                        <div class="playlist-header">
+                            <h3 th:text="#{playlist.title}">播放列表</h3>
+                            <div class="playlist-actions">
+                                <button class="action-btn" onclick="clearPlaylist()" th:text="#{playlist.clear}">清空</button>
+                                <button class="action-btn" onclick="addAllToPlaylist()" th:text="#{playlist.add_all}">全部添加</button>
+                            </div>
+                        </div>
+                        <div class="playlist" id="playlist"></div>
+                    </div>
+                    
+                    <!-- 推荐歌曲列表 -->
+                    <div class="recommended-songs" id="recommendedSongs" style="display: none;">
+                        <div class="songs-header">
+                            <h3 th:text="#{songs.recommended}">推荐歌曲</h3>
+                        </div>
+                        <div class="songs-list" id="songsList"></div>
+                    </div>
+                    
                     <audio id="audioPlayer" preload="none"></audio>
                 </div>
             </div>
