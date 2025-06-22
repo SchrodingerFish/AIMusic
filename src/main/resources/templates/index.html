@@ -3,39 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${message}">曲中人</title>
+    <title th:text="#{page.title.index}">首页 - 曲中人</title>
     <link rel="stylesheet" th:href="@{/css/index.css}">
 </head>
 <body>
 <div class="container">
-    <h1 th:text="${message}">曲中人</h1>
-    <p class="subtitle">初听不识曲中意，再听已是曲中人。</p>
+    <!-- 语言切换器 -->
+    <div class="language-switcher">
+        <a href="?lang=zh_CN" class="lang-btn" th:classappend="${#locale.language == 'zh' ? 'active' : ''}" th:text="#{page.lang.chinese}">中文</a>
+        <a href="?lang=en_US" class="lang-btn" th:classappend="${#locale.language == 'en' ? 'active' : ''}" th:text="#{page.lang.english}">English</a>
+    </div>
+    
+    <h1 th:text="#{app.name}">曲中人</h1>
+    <p class="subtitle" th:text="#{index.subtitle}">初听不识曲中意，再听已是曲中人。</p>
 
     <div class="nav-links">
-        <a th:href="@{/music}" class="nav-link primary">🤖 让音乐为你的人生指路</a>
-        <a th:href="@{/doc.html}" class="nav-link">📚 API文档</a>
+        <a th:href="@{/music}" class="nav-link primary" th:text="#{index.nav.music}">🤖 让音乐为你的人生指路</a>
+        <a th:href="@{/doc.html}" class="nav-link" th:text="#{index.nav.api}">📚 API文档</a>
     </div>
 
     <div class="features">
         <div class="feature">
             <div class="feature-icon">⚡</div>
-            <div class="feature-title">实时响应</div>
-            <div class="feature-desc">实时获取AI善解人意的情景歌词解答</div>
+            <div class="feature-title" th:text="#{index.feature.realtime.title}">实时响应</div>
+            <div class="feature-desc" th:text="#{index.feature.realtime.desc}">实时获取AI善解人意的情景歌词解答</div>
         </div>
         <div class="feature">
             <div class="feature-icon">🎨</div>
-            <div class="feature-title">现代界面</div>
-            <div class="feature-desc">美观简洁的界面，优秀的用户体验</div>
+            <div class="feature-title" th:text="#{index.feature.modern.title}">现代界面</div>
+            <div class="feature-desc" th:text="#{index.feature.modern.desc}">美观简洁的界面，优秀的用户体验</div>
         </div>
         <div class="feature">
             <div class="feature-icon">🎶</div>
-            <div class="feature-title">聆听内心</div>
-            <div class="feature-desc">聆听您此刻的内心感慨</div>
+            <div class="feature-title" th:text="#{index.feature.listen.title}">聆听内心</div>
+            <div class="feature-desc" th:text="#{index.feature.listen.desc}">聆听您此刻的内心感慨</div>
         </div>
         <div class="feature">
             <div class="feature-icon">🔧</div>
-            <div class="feature-title">RESTful API</div>
-            <div class="feature-desc">完整的API接口，支持集成开发</div>
+            <div class="feature-title" th:text="#{index.feature.api.title}">RESTful API</div>
+            <div class="feature-desc" th:text="#{index.feature.api.desc}">完整的API接口，支持集成开发</div>
         </div>
     </div>
 </div>

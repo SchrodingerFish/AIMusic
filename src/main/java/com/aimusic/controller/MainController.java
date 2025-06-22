@@ -71,7 +71,7 @@ public class MainController {
     @GetMapping("/")
     @Operation(summary = "获取首页", description = "返回曲中人主页面")
     public String index(Model model) {
-        model.addAttribute("message", "曲中人");
+        // 不再需要硬编码message，使用国际化配置
         return "index";
     }
     
