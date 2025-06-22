@@ -7,14 +7,17 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.rolling.RollingFileAppender;
-import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy;
+
+import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.util.FileSize;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 
 import jakarta.annotation.PostConstruct;
+import java.util.Arrays;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -23,6 +26,8 @@ import java.nio.charset.StandardCharsets;
  */
 @Configuration
 public class LoggingConfig {
+
+    private final Environment environment;
 
     @Value("${logging.level.com.aimusic:INFO}")
     private String appLogLevel;
@@ -36,6 +41,10 @@ public class LoggingConfig {
     @Value("${logging.pattern.file:%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n}")
     private String filePattern;
 
+    public LoggingConfig(Environment environment) {
+        this.environment = environment;
+    }
+
     @PostConstruct
     public void configureLogging() {
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
@@ -46,18 +55,48 @@ public class LoggingConfig {
         // 配置文件输出
         configureFileAppender(context);
         
-        // 配置应用程序日志级别
-        Logger appLogger = context.getLogger("com.aimusic");
-        appLogger.setLevel(Level.valueOf(appLogLevel));
+        // 设置应用程序日志级别
+        context.getLogger("com.aimusic").setLevel(Level.valueOf(appLogLevel));
         
-        // 配置第三方库日志级别
-        configureThirdPartyLoggers(context);
+        // 根据环境配置不同的日志级别
+        configureEnvironmentSpecificLogging(context);
+    }
+    
+    /**
+     * 根据环境配置特定的日志级别
+     */
+    private void configureEnvironmentSpecificLogging(LoggerContext context) {
+        String[] activeProfiles = environment.getActiveProfiles();
+        
+        if (Arrays.asList(activeProfiles).contains("dev")) {
+            // 开发环境配置
+            context.getLogger("com.aimusic").setLevel(Level.DEBUG);
+            context.getLogger("org.springframework.web").setLevel(Level.DEBUG);
+            context.getLogger("org.springframework.cache").setLevel(Level.DEBUG);
+            context.getLogger("org.apache.http.wire").setLevel(Level.DEBUG);
+        } else if (Arrays.asList(activeProfiles).contains("prod")) {
+            // 生产环境配置
+            context.getLogger("com.aimusic").setLevel(Level.INFO);
+            context.getLogger("org.springframework").setLevel(Level.ERROR);
+            context.getLogger("org.apache.http.wire").setLevel(Level.ERROR);
+        } else {
+            // 默认配置
+            context.getLogger("org.springframework").setLevel(Level.WARN);
+            context.getLogger("org.hibernate").setLevel(Level.WARN);
+            context.getLogger("com.zaxxer.hikari").setLevel(Level.WARN);
+        }
     }
 
     /**
      * 配置控制台输出
      */
     private void configureConsoleAppender(LoggerContext context) {
+        // 检查是否已存在同名的appender
+        Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
+        if (rootLogger.getAppender("CONSOLE") != null) {
+            return;
+        }
+
         ConsoleAppender<ILoggingEvent> consoleAppender = new ConsoleAppender<>();
         consoleAppender.setContext(context);
         consoleAppender.setName("CONSOLE");
@@ -72,7 +111,6 @@ public class LoggingConfig {
         consoleAppender.start();
 
         // 添加到根日志器
-        Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
         rootLogger.addAppender(consoleAppender);
     }
 
@@ -80,17 +118,22 @@ public class LoggingConfig {
      * 配置文件输出
      */
     private void configureFileAppender(LoggerContext context) {
+        // 检查是否已存在同名的appender
+        Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
+        if (rootLogger.getAppender("FILE") != null) {
+            return;
+        }
+
         RollingFileAppender<ILoggingEvent> fileAppender = new RollingFileAppender<>();
         fileAppender.setContext(context);
         fileAppender.setName("FILE");
         fileAppender.setFile(logFileName);
 
         // 配置滚动策略
-        SizeAndTimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new SizeAndTimeBasedRollingPolicy<>();
+        TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
         rollingPolicy.setContext(context);
         rollingPolicy.setParent(fileAppender);
-        rollingPolicy.setFileNamePattern(logFileName + ".%d{yyyy-MM-dd}.%i.gz");
-        rollingPolicy.setMaxFileSize(FileSize.valueOf("10MB"));
+        rollingPolicy.setFileNamePattern(logFileName + ".%d{yyyy-MM-dd}.gz");
         rollingPolicy.setMaxHistory(30); // 保留30天
         rollingPolicy.setTotalSizeCap(FileSize.valueOf("1GB")); // 总大小限制
         rollingPolicy.start();
@@ -108,74 +151,6 @@ public class LoggingConfig {
         fileAppender.start();
 
         // 添加到根日志器
-        Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
         rootLogger.addAppender(fileAppender);
-    }
-
-    /**
-     * 配置第三方库日志级别
-     */
-    private void configureThirdPartyLoggers(LoggerContext context) {
-        // Spring框架日志
-        context.getLogger("org.springframework").setLevel(Level.WARN);
-        context.getLogger("org.springframework.web").setLevel(Level.INFO);
-        context.getLogger("org.springframework.cache").setLevel(Level.INFO);
-        
-        // HTTP客户端日志
-        context.getLogger("org.apache.http").setLevel(Level.WARN);
-        context.getLogger("org.apache.http.wire").setLevel(Level.WARN);
-        
-        // Thymeleaf日志
-        context.getLogger("org.thymeleaf").setLevel(Level.WARN);
-        
-        // Knife4j日志
-        context.getLogger("com.github.xiaoymin").setLevel(Level.WARN);
-        
-        // Caffeine缓存日志
-        context.getLogger("com.github.benmanes.caffeine").setLevel(Level.WARN);
-        
-        // Hibernate Validator日志
-        context.getLogger("org.hibernate.validator").setLevel(Level.WARN);
-    }
-
-    /**
-     * 开发环境特殊配置
-     */
-    @Configuration
-    @Profile("dev")
-    static class DevLoggingConfig {
-        
-        @PostConstruct
-        public void configureDevLogging() {
-            LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-            
-            // 开发环境下启用更详细的日志
-            context.getLogger("com.aimusic").setLevel(Level.DEBUG);
-            context.getLogger("org.springframework.web").setLevel(Level.DEBUG);
-            context.getLogger("org.springframework.cache").setLevel(Level.DEBUG);
-            
-            // 启用HTTP请求日志
-            context.getLogger("org.apache.http.wire").setLevel(Level.DEBUG);
-        }
-    }
-
-    /**
-     * 生产环境特殊配置
-     */
-    @Configuration
-    @Profile("prod")
-    static class ProdLoggingConfig {
-        
-        @PostConstruct
-        public void configureProdLogging() {
-            LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-            
-            // 生产环境下减少日志输出
-            context.getLogger("com.aimusic").setLevel(Level.INFO);
-            context.getLogger("org.springframework").setLevel(Level.ERROR);
-            
-            // 关闭调试日志
-            context.getLogger("org.apache.http.wire").setLevel(Level.ERROR);
-        }
     }
 }

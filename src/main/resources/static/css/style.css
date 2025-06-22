@@ -416,6 +416,41 @@ h1 {
     background: rgba(255, 164, 39, 0.3);
 }
 
+/* Loading状态样式 */
+.submit-btn.loading {
+    background: linear-gradient(135deg, #ff9500 0%, #ff7700 100%);
+    opacity: 0.8;
+    cursor: not-allowed;
+    position: relative;
+}
+
+.submit-btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    margin: auto;
+    border: 2px solid transparent;
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* 禁用状态下的输入框样式 */
+.question-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.05);
+}
+
 .answer-section {
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(20px);

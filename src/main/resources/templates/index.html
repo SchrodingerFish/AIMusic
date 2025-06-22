@@ -3,169 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="#{page.title}">曲中人 - 用歌词解答人生</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <title th:text="${message}">曲中人</title>
+    <link rel="stylesheet" th:href="@{/css/index.css}">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="language-switcher">
-                <a href="?lang=zh_CN" class="lang-btn" th:classappend="${#locale.language == 'zh' ? 'active' : ''}" th:text="#{page.lang.chinese}">中文</a>
-                <a href="?lang=en_US" class="lang-btn" th:classappend="${#locale.language == 'en' ? 'active' : ''}" th:text="#{page.lang.english}">English</a>
-            </div>
-            <h1 th:text="#{app.name}">曲中人</h1>
-            <p th:text="#{app.description}">初听不识曲中意，再听已是曲中人</p>
-        </div>
+<div class="container">
+    <h1 th:text="${message}">曲中人</h1>
+    <p class="subtitle">初听不识曲中意，再听已是曲中人。</p>
 
-        <div class="main-content">
-            <div class="question-section">
-                <div class="question-label" th:text="#{form.question.label}">请输入你的问题：</div>
-                <textarea 
-                    class="question-input" 
-                    id="questionInput" 
-                    th:placeholder="#{form.question.placeholder}"
-                    th:maxlength="${maxQuestionLength}"
-                ></textarea>
-                
-                <!-- 歌曲数量设置 -->
-                <div class="music-count-section">
-                    <label for="musicCountInput" class="music-count-label" th:text="#{form.musicCount.label}">推荐歌曲数量：</label>
-                    <input type="number" 
-                           id="musicCountInput" 
-                           class="music-count-input" 
-                           min="1" 
-                           max="10" 
-                           value="5" 
-                           th:placeholder="#{form.musicCount.placeholder}">
-                    <span class="music-count-hint" th:text="#{form.musicCount.hint}">(1-10首)</span>
-                </div>
-                
-                <!-- 流派选择 -->
-                <div class="genre-section">
-                    <label class="genre-label" th:text="#{form.genre.label}">音乐流派：</label>
-                    <div class="genre-tags" id="genreTags">
-                        <span class="tag active" data-genre="pop" th:text="#{genre.pop}">流行</span>
-                        <span class="tag" data-genre="rock" th:text="#{genre.rock}">摇滚</span>
-                        <span class="tag" data-genre="folk" th:text="#{genre.folk}">民谣</span>
-                        <span class="tag" data-genre="jazz" th:text="#{genre.jazz}">爵士</span>
-                        <span class="tag" data-genre="classical" th:text="#{genre.classical}">古典</span>
-                        <span class="tag" data-genre="electronic" th:text="#{genre.electronic}">电子</span>
-                        <span class="tag" data-genre="hiphop" th:text="#{genre.hiphop}">嘻哈</span>
-                        <span class="tag" data-genre="country" th:text="#{genre.country}">乡村</span>
-                    </div>
-                </div>
-                
-                <!-- 国家/地区选择 -->
-                <div class="region-section">
-                    <label class="region-label" th:text="#{form.region.label}">国家/地区：</label>
-                    <div class="region-tags" id="regionTags">
-                        <span class="tag active" data-region="china" th:text="#{region.china}">中国</span>
-                        <span class="tag" data-region="usa" th:text="#{region.usa}">美国</span>
-                        <span class="tag" data-region="uk" th:text="#{region.uk}">英国</span>
-                        <span class="tag" data-region="japan" th:text="#{region.japan}">日本</span>
-                        <span class="tag" data-region="korea" th:text="#{region.korea}">韩国</span>
-                        <span class="tag" data-region="france" th:text="#{region.france}">法国</span>
-                        <span class="tag" data-region="germany" th:text="#{region.germany}">德国</span>
-                        <span class="tag" data-region="other" th:text="#{region.other}">其他</span>
-                    </div>
-                </div>
-                
-                <button class="submit-btn" id="submitBtn" onclick="askQuestion()" th:text="#{form.submit}">
-                    寻找答案
-                </button>
-                <div id="errorMessage"></div>
-            </div>
-
-            <div class="answer-section" id="answerSection">
-                <div class="answer-label" th:text="#{page.answer.label}">歌词解答：</div>
-                <div class="answer-content" id="answerContent"></div>
-
-                <!-- 音乐播放器 -->
-                <div class="music-player" id="musicPlayer" style="display: none;">
-                    <!-- 当前播放信息 -->
-                    <div class="current-music-info">
-                        <div class="music-title" id="musicTitle"></div>
-                        <div class="music-artist" id="musicArtist"></div>
-                    </div>
-                    
-                    <!-- 播放控制 -->
-                    <div class="player-controls">
-                        <button class="control-btn" id="prevBtn" onclick="playPrevious()" title="上一首">⏮</button>
-                        <button class="play-btn" id="playBtn" onclick="togglePlay()">
-                            <span class="play-icon">▶</span>
-                            <span class="pause-icon" style="display: none;">⏸</span>
-                        </button>
-                        <button class="control-btn" id="nextBtn" onclick="playNext()" title="下一首">⏭</button>
-                        
-                        <div class="progress-container">
-                            <div class="progress-bar" id="progressBar">
-                                <div class="progress-fill" id="progressFill"></div>
-                            </div>
-                            <div class="time-info">
-                                <span id="currentTime">0:00</span>
-                                <span id="duration">0:00</span>
-                            </div>
-                        </div>
-                        
-                        <button class="control-btn" id="playModeBtn" onclick="togglePlayMode()" title="播放模式">🔁</button>
-                        <button class="volume-btn" onclick="toggleMute()">🔊</button>
-                        <button class="control-btn" id="playlistBtn" onclick="togglePlaylist()" title="播放列表">📋</button>
-                    </div>
-                    
-                    <!-- 播放列表 -->
-                    <div class="playlist-container" id="playlistContainer" style="display: none;">
-                        <div class="playlist-header">
-                            <h3 th:text="#{playlist.title}">播放列表</h3>
-                            <div class="playlist-actions">
-                                <button class="action-btn" onclick="clearPlaylist()" th:text="#{playlist.clear}">清空</button>
-                                <button class="action-btn" onclick="addAllToPlaylist()" th:text="#{playlist.add_all}">全部添加</button>
-                            </div>
-                        </div>
-                        <div class="playlist" id="playlist"></div>
-                    </div>
-                    
-                    <!-- 推荐歌曲列表 -->
-                    <div class="recommended-songs" id="recommendedSongs" style="display: none;">
-                        <div class="songs-header">
-                            <h3 th:text="#{songs.recommended}">推荐歌曲</h3>
-                        </div>
-                        <div class="songs-list" id="songsList"></div>
-                    </div>
-                    
-                    <audio id="audioPlayer" preload="none"></audio>
-                </div>
-            </div>
-        </div>
-
-        <div class="footer">
-            <p th:text="#{footer.slogan}">让音乐为你的人生指路</p>
-            <a href="https://github.com/SchrodingerFish" style="color: rgba(238, 238, 238, 0.5);">Developed by SchrodingerFish</a>
-        </div>
+    <div class="nav-links">
+        <a th:href="@{/music}" class="nav-link primary">🤖 让音乐为你的人生指路</a>
+        <a th:href="@{/doc.html}" class="nav-link">📚 API文档</a>
     </div>
 
-    <script th:inline="javascript">
-        /*<![CDATA[*/
-        const MAX_QUESTION_LENGTH = /*[[${maxQuestionLength}]]*/ 500;
-        
-        // 国际化文本
-        const I18N = {
-            loading: /*[[#{js.loading}]]*/ '正在寻找合适的歌词...',
-            thinking: /*[[#{js.thinking}]]*/ '正在思考...',
-            findAnswer: /*[[#{js.find_answer}]]*/ '寻找答案',
-            error: {
-                empty: /*[[#{js.error.empty}]]*/ '问题不能为空',
-                length: /*[[#{js.error.length(${maxQuestionLength})}]]*/ '问题长度不能超过500个字符',
-                server: /*[[#{js.error.server}]]*/ '服务器错误，请稍后重试',
-                network: /*[[#{js.error.network}]]*/ '网络连接失败，请检查网络后重试',
-                play: /*[[#{js.error.play}]]*/ '音乐播放失败，可能是网络问题或音源不可用',
-                load: /*[[#{js.error.load}]]*/ '音乐加载失败，可能是网络问题或音源不可用'
-            },
-            music: {
-                notFound: /*[[#{js.music.not_found}]]*/ '未找到相关音乐或音乐暂时不可用'
-            }
-        };
-        /*]]>*/
-    </script>
-    <script th:src="@{/js/script.js}"></script>
+    <div class="features">
+        <div class="feature">
+            <div class="feature-icon">⚡</div>
+            <div class="feature-title">实时响应</div>
+            <div class="feature-desc">实时获取AI善解人意的情景歌词解答</div>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">🎨</div>
+            <div class="feature-title">现代界面</div>
+            <div class="feature-desc">美观简洁的界面，优秀的用户体验</div>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">🎶</div>
+            <div class="feature-title">聆听内心</div>
+            <div class="feature-desc">聆听您此刻的内心感慨</div>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">🔧</div>
+            <div class="feature-title">RESTful API</div>
+            <div class="feature-desc">完整的API接口，支持集成开发</div>
+        </div>
+    </div>
+</div>
 </body>
 </html>

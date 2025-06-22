@@ -10,8 +10,14 @@ import com.aimusic.exception.BusinessException;
 import com.aimusic.service.IAiService;
 import com.aimusic.service.IMusicService;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.nio.charset.StandardCharsets;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -35,6 +41,14 @@ public class MainController {
     
     private static final Logger logger = LoggerFactory.getLogger(MainController.class);
     
+    // 请求去重相关配置
+    private static final long REQUEST_TIMEOUT = 5000; // 5秒内的重复请求将被忽略
+    private static final long CACHE_CLEANUP_INTERVAL = 60000; // 1分钟清理一次过期缓存
+    private final Map<String, Long> requestCache = new ConcurrentHashMap<>();
+    private final AtomicLong totalRequests = new AtomicLong(0);
+    private final AtomicLong duplicateRequests = new AtomicLong(0);
+    private volatile long lastCleanupTime = System.currentTimeMillis();
+    
     @Autowired
     private IAiService aiService;
     
@@ -47,10 +61,17 @@ public class MainController {
     /**
      * 首页
      */
-    @GetMapping("/")
-    @Operation(summary = "获取首页", description = "返回曲中人系统的主页面")
-    public String index(Model model) {
+    @GetMapping("/music")
+    @Operation(summary = "获取曲中人", description = "返回曲中人页面")
+    public String music(Model model) {
         model.addAttribute("maxQuestionLength", appConfig.getMaxQuestionLength());
+        return "music";
+    }
+
+    @GetMapping("/")
+    @Operation(summary = "获取首页", description = "返回曲中人主页面")
+    public String index(Model model) {
+        model.addAttribute("message", "曲中人");
         return "index";
     }
     
@@ -75,7 +96,35 @@ public class MainController {
         // 验证请求参数（由全局异常处理器处理）
         
         String question = request.getQuestion().trim();
-        logger.info("收到问题: {}", question);
+        String requestId = java.util.UUID.randomUUID().toString().substring(0, 8);
+        String clientIp = getClientIpAddress(httpRequest);
+        
+        // 记录总请求数
+        totalRequests.incrementAndGet();
+        
+        // 生成请求唯一标识进行去重检查
+        String requestKey = generateRequestKey(request, clientIp);
+        long currentTime = System.currentTimeMillis();
+        
+        // 检查重复请求
+        Long lastRequestTime = requestCache.get(requestKey);
+        if (lastRequestTime != null && (currentTime - lastRequestTime) < REQUEST_TIMEOUT) {
+            duplicateRequests.incrementAndGet();
+            logger.warn("[{}] 检测到重复请求，已忽略: {} (来源IP: {}) - 总请求: {}, 重复请求: {}, 重复率: {}%", 
+                requestId, question, clientIp,
+                totalRequests.get(), 
+                duplicateRequests.get(),
+                String.format("%.2f", (duplicateRequests.get() * 100.0 / totalRequests.get())));
+            return ResponseEntity.ok(ApiResponse.error("请求过于频繁，请稍后再试"));
+        }
+        
+        // 记录请求时间
+        requestCache.put(requestKey, currentTime);
+        
+        // 定期清理过期的缓存记录
+        cleanExpiredRequests();
+        
+        logger.info("[{}] 收到问题: {} (来源IP: {})", requestId, question, clientIp);
         
         try {
             // 检查AI服务可用性
@@ -101,15 +150,17 @@ public class MainController {
                 throw new BusinessException("AI_NO_RESPONSE", "AI服务未返回有效回答，请重试");
             }
             
-            logger.info("AI回答: {}", answer);
+            logger.info("AI回答:\n{}", answer);
             
             // 尝试获取音乐信息
             List<MusicInfo> musicList = null;
             try {
                 musicList = musicService.getMusicList(answer, musicCount);
                 if (musicList != null && !musicList.isEmpty()) {
-                    logger.info("找到{}首音乐，第一首: {} - {}", musicList.size(), 
-                               musicList.get(0).getArtist(), musicList.get(0).getSong());
+                    for (int i = 0; i < musicList.size(); i++) {
+                        MusicInfo music = musicList.get(i);
+                        logger.info("找到音乐{}: {} - {}, ID: {}", i + 1, music.getArtist(), music.getSong(), music.getSongId());
+                    }
                 } else {
                     logger.info("未找到相关音乐");
                 }
@@ -150,11 +201,10 @@ public class MainController {
             // 使用现有的音乐服务搜索歌曲
             String searchQuery = artist + "-" + songName;
             List<MusicInfo> musicList = musicService.getMusicList(searchQuery, 1);
-            
             if (musicList != null && !musicList.isEmpty()) {
-                 MusicInfo musicInfo = musicList.get(0);
-                 logger.info("找到歌曲: {} - {}, ID: {}", musicInfo.getArtist(), musicInfo.getSong(), musicInfo.getSongId());
-                 return ResponseEntity.ok(ApiResponse.success(musicInfo));
+                MusicInfo music = musicList.get(0);
+                logger.info("找到音乐{}: {} - {}, ID: {}", 1, music.getArtist(), music.getSong(), music.getSongId());
+                return ResponseEntity.ok(ApiResponse.success(music));
              } else {
                 logger.info("未找到歌曲: {} - {}", artist, songName);
                 return ResponseEntity.ok(ApiResponse.success(null));
@@ -214,5 +264,78 @@ public class MainController {
         
         // 3. 默认返回中文
         return "zh-CN";
+    }
+    
+    /**
+     * 获取客户端真实IP地址
+     * @param request HTTP请求
+     * @return 客户端IP地址
+     */
+    private String getClientIpAddress(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
+            // 多级代理的情况，第一个IP为客户端真实IP
+            return xForwardedFor.split(",")[0].trim();
+        }
+        
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
+            return xRealIp;
+        }
+        
+        return request.getRemoteAddr();
+    }
+    
+    /**
+     * 生成请求唯一标识
+     * @param request 请求对象
+     * @param clientIp 客户端IP
+     * @return 请求唯一标识
+     */
+    private String generateRequestKey(QuestionRequest request, String clientIp) {
+        try {
+            String data = clientIp + ":" + request.getQuestion().trim() + ":" + 
+                         (request.getMusicCount() != null ? request.getMusicCount() : 5) + ":" +
+                         (request.getGenres() != null ? String.join(",", request.getGenres()) : "pop") + ":" +
+                         (request.getRegions() != null ? String.join(",", request.getRegions()) : "china");
+            
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] hash = md.digest(data.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            // 如果MD5不可用，使用简单的字符串拼接
+            return clientIp + "_" + request.getQuestion().hashCode();
+        }
+    }
+    
+    /**
+     * 清理过期的请求缓存
+     */
+    private void cleanExpiredRequests() {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastCleanupTime > CACHE_CLEANUP_INTERVAL) {
+            synchronized (this) {
+                if (currentTime - lastCleanupTime > CACHE_CLEANUP_INTERVAL) {
+                    int sizeBefore = requestCache.size();
+                    requestCache.entrySet().removeIf(entry -> 
+                        currentTime - entry.getValue() > REQUEST_TIMEOUT);
+                    int sizeAfter = requestCache.size();
+                    lastCleanupTime = currentTime;
+                    
+                    if (sizeBefore > sizeAfter) {
+                        logger.debug("清理过期请求缓存: {} -> {} (清理了{}个过期记录)", 
+                            sizeBefore, sizeAfter, sizeBefore - sizeAfter);
+                    }
+                }
+            }
+        }
     }
 }

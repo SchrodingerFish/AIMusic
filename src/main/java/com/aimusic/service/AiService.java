@@ -135,9 +135,13 @@ public class AiService implements IAiService {
     
     private String getSystemPrompt(int musicCount, String language, List<String> genres, List<String> regions) {
         if ("en-US".equals(language) || "en".equals(language)) {
-            return getEnglishSystemPrompt(musicCount, genres, regions);
+            String prompt = getEnglishSystemPrompt(musicCount, genres, regions);
+            logger.info("使用英文系统提示:{}",prompt);
+            return prompt;
         } else {
-            return getChineseSystemPrompt(musicCount, genres, regions);
+            String prompt = getChineseSystemPrompt(musicCount, genres, regions);
+            logger.info("使用中文系统提示:{}",prompt);
+            return prompt;
         }
     }
     

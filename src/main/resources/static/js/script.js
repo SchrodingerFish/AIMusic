@@ -13,6 +13,11 @@ let playMode = 'loop'; // 播放模式: loop(列表循环), single(单曲循环)
 let selectedGenres = ['pop']; // 默认选中流行音乐
 let selectedRegions = ['china']; // 默认选中中国
 
+// 防重复请求相关变量
+let isRequestInProgress = false; // 请求进行中标志
+let lastRequestHash = null; // 上次请求的哈希值
+let lastRequestTime = 0; // 上次请求时间
+
 /**
  * 初始化标签选择功能
  */
@@ -475,7 +480,76 @@ function validateQuestion(question) {
 /**
  * 主要的提问函数
  */
+/**
+ * 生成请求哈希值用于去重
+ */
+function generateRequestHash(question, musicCount, genres, regions) {
+    const requestData = {
+        question: question.trim(),
+        musicCount: musicCount,
+        genres: [...genres].sort(),
+        regions: [...regions].sort()
+    };
+    
+    // 使用encodeURIComponent处理中文字符，然后再使用btoa
+    try {
+        const jsonString = JSON.stringify(requestData);
+        const encodedString = encodeURIComponent(jsonString);
+        return btoa(encodedString);
+    } catch (error) {
+        // 如果btoa仍然失败，使用简单的哈希算法
+        console.warn('btoa编码失败，使用备用哈希方法:', error);
+        return simpleHash(JSON.stringify(requestData));
+    }
+}
+
+/**
+ * 简单哈希函数，用作btoa的备用方案
+ */
+function simpleHash(str) {
+    let hash = 0;
+    if (str.length === 0) return hash.toString();
+    
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // 转换为32位整数
+    }
+    
+    return Math.abs(hash).toString(36);
+}
+
+/**
+ * 防抖函数
+ */
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 async function askQuestion() {
+    const currentTime = Date.now();
+    
+    // 防止重复请求 - 检查请求进行中状态
+    if (isRequestInProgress) {
+        console.log('请求正在进行中，忽略重复点击');
+        return;
+    }
+    
+    // 防止频繁请求 - 限制请求间隔至少1秒
+    if (currentTime - lastRequestTime < 1000) {
+        console.log('请求过于频繁，请稍后再试');
+        showError('请求过于频繁，请稍后再试');
+        return;
+    }
+    
     const questionInput = document.getElementById('questionInput');
     const submitBtn = document.getElementById('submitBtn');
     const question = questionInput.value.trim();
@@ -498,9 +572,24 @@ async function askQuestion() {
         musicCountInput.value = 10;
     }
     
-    // 禁用按钮，防止重复提交
+    // 生成请求哈希进行去重检查
+    const requestHash = generateRequestHash(question, musicCount, selectedGenres, selectedRegions);
+    if (requestHash === lastRequestHash) {
+        console.log('检测到重复请求，已忽略');
+        showError('检测到重复请求，请修改问题后重试');
+        return;
+    }
+    
+    // 设置请求状态
+    isRequestInProgress = true;
+    lastRequestHash = requestHash;
+    lastRequestTime = currentTime;
+    
+    // 禁用按钮和输入框，防止重复提交
     submitBtn.disabled = true;
+    questionInput.disabled = true;
     submitBtn.textContent = I18N.thinking;
+    submitBtn.classList.add('loading');
     
     // 清除之前的错误消息
     document.getElementById('errorMessage').innerHTML = '';
@@ -545,9 +634,12 @@ async function askQuestion() {
         showError(I18N.error.network);
         document.getElementById('answerSection').classList.remove('show');
     } finally {
-        // 恢复按钮状态
+        // 重置所有状态
+        isRequestInProgress = false;
         submitBtn.disabled = false;
+        questionInput.disabled = false;
         submitBtn.textContent = I18N.findAnswer;
+        submitBtn.classList.remove('loading');
     }
 }
 
@@ -990,13 +1082,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const questionInput = document.getElementById('questionInput');
     const submitBtn = document.getElementById('submitBtn');
     
-    // 添加回车键提交功能
-    questionInput.addEventListener('keydown', function(event) {
-        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-            event.preventDefault();
-            askQuestion();
-        }
-    });
+    // 键盘事件监听已移除，只保留按钮点击提交
     
     // 添加字符计数提示
     questionInput.addEventListener('input', function() {
