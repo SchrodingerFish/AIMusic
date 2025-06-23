@@ -105,3 +105,4 @@ src/main/resources/application-local.yml
 
 .fastRequest/
 src/main/resources/rebel.xml
+.env
