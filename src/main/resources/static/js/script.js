@@ -572,14 +572,14 @@ async function askQuestion() {
         musicCountInput.value = 10;
     }
     
-    // 生成请求哈希进行去重检查
+    // 生成请求哈希进行去重检查(去除检查)
     const requestHash = generateRequestHash(question, musicCount, selectedGenres, selectedRegions);
-    if (requestHash === lastRequestHash) {
-        console.log('检测到重复请求，已忽略');
-        showError('检测到重复请求，请修改问题后重试');
-        return;
-    }
-    
+    // if (requestHash === lastRequestHash) {
+    //     console.log('检测到重复请求，已忽略');
+    //     showError('检测到重复请求，请修改问题后重试');
+    //     return;
+    // }
+    //
     // 设置请求状态
     isRequestInProgress = true;
     lastRequestHash = requestHash;
